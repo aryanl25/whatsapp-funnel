@@ -11,9 +11,7 @@ from sqlalchemy import inspect
 app = FastAPI(title="Whatsapp-Bot")
 
 origins = [
-    "http://localhost:8001",
-    "http://localhost:5050",
-    "http://localhost:3000",
+    "*"
 ]
 
 app.add_middleware(
