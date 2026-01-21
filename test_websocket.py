@@ -1,83 +1,68 @@
 import asyncio
-import websockets
 import json
-from datetime import datetime
+import sys
+from typing import Any, Dict
 
-WS_URL = "ws://127.0.0.1:8000"
-TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0NjcxZjI4YS01YjAyLTQ1OTctYjQ3YS05Yzc3MTRlZmEwNTgiLCJvcmdfaWQiOiI5NzRmOTI4OC0zZTA1LTRjMDAtYjczOC1jOWFjMzliYjQxNjkiLCJleHAiOjE3NzE1OTcwMjh9.Mr-Z45bM9TR-hezrrSjMhrpRPR7x-NSy0b7fe_q1Ddw"
+import websockets
 
-async def test_websocket():
-    print("="*60)
-    print("  WEBSOCKET CONNECTION TEST")
-    print("="*60)
-    
-    ws_url = f"{WS_URL}/ws?token={TOKEN}"
-    print(f"\n🔌 Connecting to: {ws_url}")
-    
+
+async def test_websocket_connection(token: str) -> None:
+    """
+    Connects to FastAPI websocket endpoint at:
+      ws://localhost:8000/ws?token=...
+    Sends a simple message and prints the response.
+    """
+
+    ws_url = f"ws://localhost:8000/ws?token={token}"
+    print(f"Connecting to: {ws_url}")
+
     try:
         async with websockets.connect(ws_url) as websocket:
-            print("✅ WebSocket connected successfully!\n")
-            
-            # Send first test message
-            test_message = {
-                "type": "ping",
-                "timestamp": datetime.now().isoformat(),
-                "data": "Hello from WebSocket test"
+            print("✅ Connected!")
+
+            # Send a simple JSON payload
+            msg: Dict[str, Any] = {
+                "event": "ping",
+                "payload": {
+                    "message": "hello from ws_test_client.py"
+                }
             }
-            print(f"📤 Sending: {json.dumps(test_message, indent=2)}")
-            await websocket.send(json.dumps(test_message))
-            
-            # Wait for response
-            print("\n⏳ Waiting for response...")
+
+            print(f"➡️  Sending: {msg}")
+            await websocket.send(json.dumps(msg))
+
+            # Receive response
+            response_raw = await websocket.recv()
             try:
-                response = await asyncio.wait_for(websocket.recv(), timeout=5.0)
-                print(f"✅ Received: {response}")
-                
-                try:
-                    response_json = json.loads(response)
-                    print(f"\n📦 Parsed JSON response:")
-                    print(json.dumps(response_json, indent=2))
-                except:
-                    pass
-                    
-            except asyncio.TimeoutError:
-                print("⚠️ No response within 5 seconds")
-            
-            # Send second test message
-            test_message2 = {
-                "type": "test",
-                "action": "echo",
-                "payload": {"message": "Testing bidirectional communication", "count": 42}
-            }
-            print(f"\n📤 Sending second message: {json.dumps(test_message2, indent=2)}")
-            await websocket.send(json.dumps(test_message2))
-            
-            # Wait for response
-            try:
-                response = await asyncio.wait_for(websocket.recv(), timeout=5.0)
-                print(f"✅ Received: {response}")
-                try:
-                    response_json = json.loads(response)
-                    print(f"\n📦 Parsed JSON response:")
-                    print(json.dumps(response_json, indent=2))
-                except:
-                    pass
-            except asyncio.TimeoutError:
-                print("⚠️ No response within 5 seconds")
-            
-            print("\n" + "="*60)
-            print("  ✅ WEBSOCKET TEST COMPLETED SUCCESSFULLY")
-            print("="*60)
-            
+                response = json.loads(response_raw)
+                print(f"⬅️  Received JSON: {response}")
+            except json.JSONDecodeError:
+                print(f"⬅️  Received TEXT: {response_raw}")
+
+            print("✅ Test completed successfully.")
+
+    except websockets.exceptions.InvalidStatusCode as e:
+        print(f"❌ Connection rejected with HTTP status: {e.status_code}")
     except Exception as e:
-        print(f"\n❌ WebSocket error: {type(e).__name__}: {e}")
-        print("\n" + "="*60)
-        print("  ❌ WEBSOCKET TEST FAILED")
-        print("="*60)
-        return False
-    
-    return True
+        print(f"❌ Error: {e}")
+
+
+def main():
+    """
+    Usage:
+      python ws_test_client.py YOUR_TOKEN
+
+    Example:
+      python ws_test_client.py abc123
+    """
+    if len(sys.argv) < 2:
+        print("Usage: python ws_test_client.py <token>")
+        print("Example: python ws_test_client.py abc123")
+        sys.exit(1)
+
+    token = sys.argv[1]
+    asyncio.run(test_websocket_connection(token))
+
 
 if __name__ == "__main__":
-    success = asyncio.run(test_websocket())
-    exit(0 if success else 1)
+    main()

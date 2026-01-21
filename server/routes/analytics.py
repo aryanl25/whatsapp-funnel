@@ -5,7 +5,6 @@ from server.dependencies import get_db
 from server.dependencies import get_auth_context
 from server.models import Analytics as AnalyticsModel
 from server.schemas import AnalyticsOut, AuthContext
-from datetime import datetime, timedelta
 
 router = APIRouter()
 

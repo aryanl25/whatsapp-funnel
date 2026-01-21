@@ -57,7 +57,7 @@ def get_whatsapp_status(
         
     return integration
 
-@router.put("/whatsapp/config", response_model=WhatsAppIntegrationOut)
+@router.put("/whatsapp/update", response_model=WhatsAppIntegrationOut)
 def update_whatsapp_config(
     payload: WhatsAppIntegrationUpdate,
     db: Session = Depends(get_db),

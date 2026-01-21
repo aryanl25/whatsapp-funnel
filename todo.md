@@ -142,7 +142,20 @@ System / Infra
 
 
 
-Add users page to list all people of the organisation
-add Org details in settings
-also in the bottom left, my name should be there
-backend apis to be done properly
+
+
+
+
+
+1) whatsapp worker to get tokens and other meta related data from db instead of config as different for each user
+
+2) backend apis to be done properly
+
+3) Frontend integration not yet complete
+    a. also in the bottom left, my name should be there
+    b. Add users page to list all people of the organisation
+
+4) add Org details in settings
+
+5) Update Backend to include user and organisation
+

@@ -79,12 +79,6 @@ def handle_webhook(body: Mapping) -> Tuple[Mapping, int]:
         
         if msg.get("type") == "text":
             text_body = msg["text"]["body"]
-            
-        elif msg.get("type") == "audio":
-            logger.info("Received audio message")
-            audio_id = msg["audio"]["id"]
-            # TODO: Process audio
-            return {"status": "ok"}, 200
 
         if text_body:
             logger.info(f"Received from {sender_waid}: {text_body}")
@@ -104,7 +98,5 @@ def handle_webhook(body: Mapping) -> Tuple[Mapping, int]:
         logger.error(f"Webhook handling error: {e}", exc_info=True)
         return {"status": "error", "message": str(e)}, 500
 
-
 if __name__ == "__main__":
     start_worker()
-

@@ -47,3 +47,21 @@ class MessageFrom(str, Enum):
     LEAD = "lead"
     BOT = "bot"
     HUMAN = "human"
+
+class WSEvents:
+    # Inbox
+    MESSAGE_RECEIVED = "message:received"
+    MESSAGE_SENT = "message:sent"
+    CONVERSATION_UPDATED = "conversation:updated"
+    TAKEOVER_STARTED = "conversation:takeover_started"
+    TAKEOVER_ENDED = "conversation:takeover_ended"
+
+    # Action Center
+    ACTION_CONVERSATIONS_FLAGGED = "action:conversations_flagged"
+    ACTION_HUMAN_ATTENTION_REQUIRED = "action:human_attention_required"
+
+    # System
+    ACK = "ack"
+    ERROR = "error"
+    SERVER_HELLO = "server:hello"
+    CLIENT_HEARTBEAT = "client:heartbeat"
