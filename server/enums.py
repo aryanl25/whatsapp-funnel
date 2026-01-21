@@ -50,8 +50,6 @@ class MessageFrom(str, Enum):
 
 class WSEvents:
     # Inbox
-    MESSAGE_RECEIVED = "message:received"
-    MESSAGE_SENT = "message:sent"
     CONVERSATION_UPDATED = "conversation:updated"
     TAKEOVER_STARTED = "conversation:takeover_started"
     TAKEOVER_ENDED = "conversation:takeover_ended"

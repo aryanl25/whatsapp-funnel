@@ -22,34 +22,23 @@ async def websocket_endpoint(
         await websocket.close(code=1008)
         return
 
-    await manager.connect(websocket, auth.organization_id)
+    # Connect with both user_id and org_id
+    await manager.connect(websocket, auth.user_id, auth.organization_id)
 
     try:
         # Let frontend know connection is ready
         await websocket.send_json({
             "event": WSEvents.SERVER_HELLO,
-            "payload": {"organization_id": str(auth.organization_id)},
+            "payload": {"organization_id": str(auth.organization_id), "user_id": str(auth.user_id)},
         })
 
         while True:
             data: Dict[str, Any] = await websocket.receive_json()
-            event = data.get("event")
-
-            if event == WSEvents.CLIENT_HEARTBEAT:
-                await websocket.send_json({
-                    "event": WSEvents.ACK,
-                    "payload": {"ts": int(time.time())},
-                })
-                continue
-
-            # unknown client event
-            await websocket.send_json({
-                "event": WSEvents.ERROR,
-                "payload": {"message": f"Unknown event: {event}"},
-            })
+            # Delegate all processing to manager
+            await manager.handle_incoming(auth.user_id, data)
 
     except WebSocketDisconnect:
-        manager.disconnect(websocket, auth.organization_id)
+        manager.disconnect(websocket, auth.user_id, auth.organization_id)
     except Exception as e:
         print(f"WebSocket error: {e}")
-        manager.disconnect(websocket, auth.organization_id)
+        manager.disconnect(websocket, auth.user_id, auth.organization_id)
