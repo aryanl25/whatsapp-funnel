@@ -11,6 +11,17 @@ from server.schemas import (
     SignupJoinOrgResponse
 )
 from server.security import hash_password, verify_password, create_access_token
+from server.dependencies import get_auth_context
+from server.schemas import (
+    LoginRequest, 
+    LoginResponse, 
+    SignupCreateOrgRequest, 
+    SignupCreateOrgResponse, 
+    SignupJoinOrgRequest, 
+    SignupJoinOrgResponse,
+    UserOut,
+    AuthContext
+)
 
 router = APIRouter()
 
@@ -101,3 +112,13 @@ def signup_join_org(payload: SignupJoinOrgRequest, db: Session = Depends(get_db)
         user_id=new_user.id,
         organization_id=new_user.organization_id
     )
+
+@router.get("/me", response_model=UserOut)
+def get_me(
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(get_auth_context)
+):
+    user = db.query(User).filter(User.id == auth.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user

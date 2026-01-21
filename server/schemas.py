@@ -196,7 +196,7 @@ class MessageOut(BaseModel):
 class CTACreate(BaseModel):
     name: str
     cta_type: CTAType
-    scheduled_at: Optional[datetime]
+    scheduled_at: Optional[datetime] = None
 
 
 class CTAUpdate(BaseModel):
