@@ -13,9 +13,9 @@ else:
 
 class WhatsAppSendConfig:
     def __init__(self) -> None:
-        self.ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
-        self.VERSION = os.getenv("VERSION")
-        self.PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
+        # self.ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+        # self.VERSION = os.getenv("VERSION")
+        # self.PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 
         self.QUEUE_URL = os.getenv("QUEUE_URL")
         self.AWS_REGION = os.getenv("AWS_REGION")

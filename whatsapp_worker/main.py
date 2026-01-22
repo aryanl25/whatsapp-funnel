@@ -1,3 +1,4 @@
+from server.schemas import WSActionHumanAttentionRequired
 import logging
 from typing import Mapping, Tuple
 from whatsapp_worker.config import config
@@ -76,7 +77,7 @@ def handle_webhook(body: Mapping) -> Tuple[Mapping, int]:
         sender_waid = contacts[0].get("wa_id") if contacts and len(contacts) > 0 else msg.get("from")
         
         text_body = None
-        
+        if mode = bot
         if msg.get("type") == "text":
             text_body = msg["text"]["body"]
 
@@ -86,12 +87,13 @@ def handle_webhook(body: Mapping) -> Tuple[Mapping, int]:
             # Process message using service
             db = SessionLocal()
             try:
-                ai_response = handle_incoming_message(db, sender_waid, text_body, contacts)
+                ai_response = htl logic(db, sender_waid, text_body, contacts)
                 if ai_response:
                     send_whatsapp_text(sender_waid, ai_response)
             finally:
                 db.close()
-                
+        elif mode = human
+        {htl doesnt take place, just just basic storing message, gathering information, websocket sending update}
         return {"status": "ok"}, 200
         
     except Exception as e:

@@ -22,7 +22,8 @@ def _get_text_payload(recipient: str, text: str) -> str:
 
 def send_whatsapp_text(
     to: str, 
-    text: str
+    text: str,
+    whatsapp_obj: {ACCESS_TOKEN,VERSION,PHONE_NUMBER_ID}
 ) -> Tuple[Mapping, int]:
     """
     Sends a WhatsApp message.
@@ -35,7 +36,7 @@ def send_whatsapp_text(
     recipient = to
     
     # Validation
-    if not (config.ACCESS_TOKEN and config.VERSION and config.PHONE_NUMBER_ID and recipient):
+    if not (whatsapp_obj.ACCESS_TOKEN and config.VERSION and config.PHONE_NUMBER_ID and recipient):
         logger.error("Missing WhatsApp configuration or recipient")
         return {"status": "error", "message": "Missing configuration"}, 500
 

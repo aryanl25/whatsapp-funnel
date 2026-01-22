@@ -87,3 +87,24 @@ Events include
 
 this has to be correctly initialised in the frontend and backend. 
 All necessary schemas are available in the server/schemas.py file.
+
+### Whatsapp Worker
+How the whatsapp worker should work
+1) long polling on aws sqs queue which contains messages from N number of customers for M number of whatsapp numbers(1 per client) 
+2) For each message, 
+    a) based on the receiver number[phone_number_id] (client's number not the customer's number), the worker should fetch the correct database row of all tokens and other ids - object of tokens
+    b) based on the sender number, the worker should check the human in the loop logic if flag is raised or not
+    switch for htl on/off
+    htl on
+        c) based on the sender message, the worker should run the main logic (HTL)
+        d) HTL will include logic for storing the message, updating the tables, generating responses, updating enums, etc. Output will be response message
+        e) Response message will be sent to the customer from the same number using the step a) fetched details
+    htl off
+        c)based on the sender message will be sent to frontend using websocket
+        d)just respond normally like human does on whatsapp by typing
+        e)send and store and websocket formality
+
+## Whatsapp Receiver
+Will need minor updates due to the new logic, can be solved using apis 
+
+## Frontend
