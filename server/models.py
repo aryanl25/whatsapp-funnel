@@ -63,8 +63,8 @@ class Conversation(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
     lead_id = Column(UUID(as_uuid=True), ForeignKey("leads.id"), nullable=False)
-    cta_id = Column(UUID(as_uuid=True), ForeignKey("ctas.id"), nullable=True) # Litle bit confusiing
-
+    cta_id = Column(UUID(as_uuid=True), ForeignKey("ctas.id"), nullable=True)
+    cta_scheduled_at = Column(DateTime(timezone=True), nullable=True)
     stage = Column(SQLEnum(ConversationStage), nullable=False)
     intent_level = Column(SQLEnum(IntentLevel), nullable=True)
     mode = Column(SQLEnum(ConversationMode), nullable=False)
@@ -106,10 +106,9 @@ class CTA(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
-    name = Column(String(255), nullable=False) # book a call
-    cta_type = Column(SQLEnum(CTAType), nullable=False) #
+    name = Column(String(255), nullable=False)
+    cta_type = Column(SQLEnum(CTAType), nullable=False)
     is_active = Column(Boolean, default=True)
-    scheduled_at = Column(DateTime(timezone=True), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -129,7 +128,7 @@ class Template(Base):
     name = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
 
-    status = Column(SQLEnum(TemplateStatus), default=TemplateStatus.PENDING)
+    status = Column(SQLEnum(TemplateStatus), default=TemplateStatus.DRAFT)
     approved_at = Column(DateTime(timezone=True), nullable=True)
     rejection_reason = Column(Text, nullable=True)
     

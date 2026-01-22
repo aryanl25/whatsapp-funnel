@@ -7,6 +7,7 @@ from server.schemas import (
     WhatsAppIntegrationOut, 
     WhatsAppIntegrationCreate, 
     WhatsAppIntegrationUpdate, 
+    WhatsAppStatusOut,
     AuthContext,
     SuccessResponse
 )
@@ -27,13 +28,15 @@ def connect_whatsapp(
     
     if integration:
         # Update existing
-        for key, value in payload.model_dump().items():
+        update_data = payload.model_dump()
+        for key, value in update_data.items():
             setattr(integration, key, value)
         integration.is_connected = True
     else:
-        # Create new
+        # Create new - explicitly exclude updated_at
+        payload_data = payload.model_dump(exclude_unset=True)
         integration = WhatsAppIntegration(
-            **payload.model_dump(),
+            **payload_data,
             organization_id=auth.organization_id,
             is_connected=True
         )
@@ -43,7 +46,7 @@ def connect_whatsapp(
     db.refresh(integration)
     return integration
 
-@router.get("/whatsapp/status", response_model=WhatsAppIntegrationOut)
+@router.get("/whatsapp/status", response_model=WhatsAppStatusOut)
 def get_whatsapp_status(
     db: Session = Depends(get_db),
     auth: AuthContext = Depends(get_auth_context)
@@ -53,9 +56,11 @@ def get_whatsapp_status(
     ).first()
     
     if not integration:
-        raise HTTPException(status_code=404, detail="WhatsApp integration not found")
+        # Return default "not connected" status
+        return WhatsAppStatusOut(is_connected=False)
         
-    return integration
+    # Return existing integration status
+    return WhatsAppStatusOut(is_connected=integration.is_connected)
 
 @router.patch("/whatsapp/update", response_model=WhatsAppIntegrationOut)
 def update_whatsapp_config(

@@ -8,8 +8,67 @@ from server.schemas import TemplateCreate, TemplateUpdate, TemplateOut, Template
 from server.enums import TemplateStatus
 from uuid import UUID
 from datetime import datetime
+import requests
 
 router = APIRouter()
+
+META_BASE_URL = "https://graph.facebook.com/v19.0"
+
+def submit_template_to_meta(
+    *,
+    waba_id: str,
+    access_token: str,
+    payload: dict
+):
+    url = f"{META_BASE_URL}/{waba_id}/message_templates"
+
+    response = requests.post(
+        url,
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        },
+        json=payload,
+        timeout=10
+    )
+
+    if response.status_code >= 400:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "Meta template submission failed",
+                "meta_response": response.json()
+            }
+        )
+
+    return response.json()
+
+
+def fetch_template_status_from_meta(
+    *,
+    template_name: str,
+    access_token: str
+):
+    url = f"{META_BASE_URL}/message_templates"
+
+    response = requests.get(
+        url,
+        headers={"Authorization": f"Bearer {access_token}"},
+        params={"name": template_name},
+        timeout=10
+    )
+
+    if response.status_code >= 400:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "Meta template status fetch failed",
+                "meta_response": response.json()
+            }
+        )
+
+    data = response.json().get("data", [])
+    return data[0] if data else None
 
 @router.get("/", response_model=List[TemplateOut])
 def get_templates(
@@ -27,7 +86,7 @@ def create_template(
     db_template = Template(
         **template.model_dump(),
         organization_id=auth.organization_id,
-        status=TemplateStatus.PENDING
+        status=TemplateStatus.DRAFT
     )
     db.add(db_template)
     db.commit()
@@ -45,14 +104,19 @@ def update_template(
         Template.id == template_id,
         Template.organization_id == auth.organization_id
     ).first()
-    
+
     if not db_template:
         raise HTTPException(status_code=404, detail="Template not found")
-    
-    update_data = template.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
+
+    if db_template.status != TemplateStatus.DRAFT:
+        raise HTTPException(
+            status_code=400,
+            detail="Only draft templates can be edited"
+        )
+
+    for key, value in template.model_dump(exclude_unset=True).items():
         setattr(db_template, key, value)
-    
+
     db.commit()
     db.refresh(db_template)
     return db_template
@@ -67,13 +131,18 @@ def delete_template(
         Template.id == template_id,
         Template.organization_id == auth.organization_id
     ).first()
-    
+
     if not db_template:
         raise HTTPException(status_code=404, detail="Template not found")
-    
+
+    if db_template.status == TemplateStatus.APPROVED:
+        raise HTTPException(
+            status_code=400,
+            detail="Approved templates cannot be deleted"
+        )
+
     db.delete(db_template)
     db.commit()
-    return None
 
 @router.post("/{template_id}/submit", response_model=TemplateOut)
 def submit_template(
@@ -85,13 +154,33 @@ def submit_template(
         Template.id == template_id,
         Template.organization_id == auth.organization_id
     ).first()
-    
+
     if not db_template:
         raise HTTPException(status_code=404, detail="Template not found")
-    
-    db_template.status = TemplateStatus.APPROVED # Mock automatic approval for now
-    db_template.approved_at = datetime.now()
-    
+
+    if db_template.status != TemplateStatus.DRAFT:
+        raise HTTPException(
+            status_code=400,
+            detail="Only draft templates can be submitted"
+        )
+
+    # ---- Meta payload ----
+    meta_payload = {
+        "name": db_template.name,
+        "language": db_template.language,
+        "category": db_template.category,
+        "components": db_template.components
+    }
+
+    submit_template_to_meta(
+        waba_id=auth.meta_waba_id,
+        access_token=auth.meta_access_token,
+        payload=meta_payload
+    )
+
+    db_template.status = TemplateStatus.SUBMITTED
+    db_template.submitted_at = datetime.utcnow()
+
     db.commit()
     db.refresh(db_template)
     return db_template
@@ -106,10 +195,24 @@ def get_template_status(
         Template.id == template_id,
         Template.organization_id == auth.organization_id
     ).first()
-    
+
     if not db_template:
         raise HTTPException(status_code=404, detail="Template not found")
-    
+
+    meta_data = fetch_template_status_from_meta(
+        template_name=db_template.name,
+        access_token=access_token
+    )
+
+    if meta_data:
+        db_template.status = meta_data["status"].lower()
+        db_template.rejection_reason = meta_data.get("rejected_reason")
+        if meta_data["status"] == "APPROVED":
+            db_template.approved_at = datetime.utcnow()
+
+        db.commit()
+        db.refresh(db_template)
+
     return TemplateStatusOut(
         status=db_template.status,
         approved_at=db_template.approved_at,

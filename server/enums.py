@@ -39,7 +39,10 @@ class UserSentiment(str, Enum):
     UNINTERESTED = "uninterested"
 
 class TemplateStatus(str, Enum):
+    # Legacy compatibility: keep PENDING to avoid enum lookup errors on existing rows
     PENDING = "pending"
+    DRAFT = "draft"
+    SUBMITTED = "submitted"
     APPROVED = "approved"
     REJECTED = "rejected"
 
