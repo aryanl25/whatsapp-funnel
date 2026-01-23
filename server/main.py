@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from server.database import engine, Base
 from server.routes import router
 from sqlalchemy import inspect
-import server.models
 # =========================================================
 # FASTAPI APP
 # =========================================================

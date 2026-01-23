@@ -1,12 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
-from typing import Dict
 from server.dependencies import get_db
 from server.dependencies import get_auth_context
 from server.models import Message, Conversation
 from server.schemas import AnalyticsReportOut, AuthContext
-from server.enums import MessageFrom, UserSentiment, IntentLevel
 
 router = APIRouter()
 

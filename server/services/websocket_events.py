@@ -27,11 +27,13 @@ async def handle_heartbeat(user_id: UUID, payload: Dict[str, Any]):
 async def handle_takeover_started(user_id: UUID, payload: Dict[str, Any]):
     conversation_id = payload.get("conversation_id")
     if not conversation_id:
+        await emit_error(user_id, "Missing conversation_id in takeover_started payload")
         return
 
     with SessionLocal() as db:
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
+            await emit_error(user_id, "User not found")
             return
 
         conversation = db.query(Conversation).filter(
@@ -40,27 +42,30 @@ async def handle_takeover_started(user_id: UUID, payload: Dict[str, Any]):
         ).first()
 
         if not conversation:
+            await emit_error(user_id, "Conversation not found")
             return
 
         # Update mode to HUMAN
         conversation.mode = ConversationMode.HUMAN
-        # conversation.assigned_user_id = user_id # Optional assignment logic can be added here
         db.commit()
         db.refresh(conversation)
 
         # Broadcast update
         conv_out = ConversationOut.model_validate(conversation)
         await emit_conversation_updated(user.organization_id, conv_out)
+        await emit_ack(user_id, "takeover_started")
 
 
 async def handle_takeover_ended(user_id: UUID, payload: Dict[str, Any]):
     conversation_id = payload.get("conversation_id")
     if not conversation_id:
+        await emit_error(user_id, "Missing conversation_id in takeover_ended payload")
         return
 
     with SessionLocal() as db:
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
+            await emit_error(user_id, "User not found")
             return
 
         conversation = db.query(Conversation).filter(
@@ -69,6 +74,7 @@ async def handle_takeover_ended(user_id: UUID, payload: Dict[str, Any]):
         ).first()
 
         if not conversation:
+            await emit_error(user_id, "Conversation not found")
             return
 
         # Update mode back to BOT
@@ -79,6 +85,7 @@ async def handle_takeover_ended(user_id: UUID, payload: Dict[str, Any]):
         # Broadcast update
         conv_out = ConversationOut.model_validate(conversation)
         await emit_conversation_updated(user.organization_id, conv_out)
+        await emit_ack(user_id, "takeover_ended")
 
 # Event Handler User Mapping
 HANDLER_MAP: Dict[str, Callable[[UUID, Dict[str, Any]], Awaitable[None]]] = {
@@ -91,13 +98,23 @@ async def handle_event(user_id: UUID, data: Dict[str, Any]):
     event_type = data.get("event")
     payload = data.get("payload", {})
     
-    if event_type in HANDLER_MAP:
-        await HANDLER_MAP[event_type](user_id, payload)
-    else:
-        # Optionally log unknown event or send error
-        print(f"Unknown event received from {user_id}: {event_type}")
+    try:
+        if event_type in HANDLER_MAP:
+            await HANDLER_MAP[event_type](user_id, payload)
+        else:
+            await emit_error(user_id, f"Unknown event: {event_type}")
+    except Exception as e:
+        await emit_error(user_id, f"Error handling {event_type}: {str(e)}")
 
 # Outbound Emitters
+async def emit_ack(user_id: UUID, event_acknowledged: str):
+    envelope = WebSocketEnvelope(event=WSEvents.ACK, payload={"event": event_acknowledged})
+    await manager.send_to_user(user_id, envelope.model_dump())
+
+async def emit_error(user_id: UUID, error_message: str):
+    envelope = WebSocketEnvelope(event=WSEvents.ERROR, payload={"message": error_message})
+    await manager.send_to_user(user_id, envelope.model_dump())
+
 async def emit_conversation_updated(org_id: UUID, conversation: ConversationOut):
     payload = WSConversationUpdated(conversation=conversation)
     envelope = WebSocketEnvelope(event=WSEvents.CONVERSATION_UPDATED, payload=payload.model_dump())

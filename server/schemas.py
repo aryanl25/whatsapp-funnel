@@ -148,7 +148,7 @@ class ConversationOut(BaseModel):
     organization_id: UUID
     lead_id: Optional[UUID]
     cta_id: Optional[UUID]
-
+    cta_scheduled_at: Optional[datetime]
     stage: ConversationStage
     intent_level: Optional[IntentLevel]
     mode: ConversationMode
@@ -196,13 +196,10 @@ class MessageOut(BaseModel):
 class CTACreate(BaseModel):
     name: str
     cta_type: CTAType
-    scheduled_at: Optional[datetime] = None
-
 
 class CTAUpdate(BaseModel):
     name: Optional[str]
     is_active: Optional[bool]
-    scheduled_at: Optional[datetime]
 
 
 class CTAOut(BaseModel):
@@ -339,6 +336,7 @@ class WhatsAppIntegrationUpdate(BaseModel):
     version: Optional[str]
     verify_token: Optional[str]
     app_secret: Optional[str]
+    phone_number_id: Optional[str]
 
 
 class WhatsAppIntegrationOut(BaseModel):
@@ -348,6 +346,10 @@ class WhatsAppIntegrationOut(BaseModel):
     is_connected: bool
     created_at: datetime
     updated_at: Optional[datetime]
+
+
+class WhatsAppStatusOut(BaseModel):
+    is_connected: bool = False
 
 
 # ======================================================
